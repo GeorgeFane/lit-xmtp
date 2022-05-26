@@ -5,6 +5,9 @@ import useXmtp from '../hooks/useXmtp'
 import ConversationsList from './ConversationsList'
 import Loader from './Loader'
 
+import { useEffect, useState } from 'react'
+import LitJsSdk from 'lit-js-sdk'
+
 type NavigationPanelProps = {
   onConnect: () => Promise<void>
 }
@@ -65,6 +68,86 @@ const ConnectButton = ({ onConnect }: ConnectButtonProps): JSX.Element => {
 
 const ConversationsPanel = (): JSX.Element => {
   const { conversations, loadingConversations, client } = useXmtp()
+  const [ filterMode, setFilterMode ] = useState(false)
+  const [ verifiedArray, setVerifiedArray ] = useState<any[][]>([])
+
+  const chain = 'rinkeby'
+  const baseUrl = 'http://localhost:3000'
+
+  const peers = conversations.map(conversation => conversation.peerAddress)
+
+  const getAccessControlConditions = (address: string) => ([
+    {
+      contractAddress: '0x5B8B635c2665791cf62fe429cB149EaB42A3cEd8',
+      standardContractType: 'ERC20',
+      chain,
+      method: 'balanceOf',
+      parameters: [
+        address
+      ],
+      returnValueTest: {
+        comparator: '>',
+        value: '0'
+      }
+    }
+  ])
+
+  const getResourceId = (address: string) => ({
+    baseUrl,
+    path: '/dm/' + address, // this would normally be your url path, like "/webpage.html" for example
+    orgId: "",
+    role: "",
+    extraData: ""
+  })
+
+  async function connect() {
+    setFilterMode(!filterMode)
+    if (filterMode) {
+      return
+    }
+
+    const client = new LitJsSdk.LitNodeClient({ alertWhenUnauthorized: false })
+    await client.connect()
+    const authSig = await LitJsSdk.checkAndSignAuthMessage({chain})
+
+    async function getVerified(address: string) {
+      const accessControlConditions = getAccessControlConditions(address)
+      const resourceId = getResourceId(address)
+  
+      try {
+        await client.saveSigningCondition({ accessControlConditions, chain, authSig, resourceId })
+      } catch (err) {
+        console.log('error: ', err)
+      }
+
+      try {
+        const jwt = await client.getSignedToken({
+          accessControlConditions, chain, authSig, resourceId
+        })
+    
+        const { verified } = LitJsSdk.verifyJwt({ jwt })
+        return [address, verified]
+      }
+      catch (err) {
+        return [address, false]
+      }
+    }
+
+    const promises = peers.map(peer => getVerified(peer))
+    const rtn = await Promise.all(promises)
+    console.log('map', rtn)
+    setVerifiedArray(rtn)
+  }
+
+  console.log('verifiedArray', verifiedArray)
+  let verifiedObject: any = {}
+  if (verifiedArray.length) {
+    verifiedArray.forEach( ([ address, isVerified ]) => {
+      verifiedObject[address] = isVerified
+    })
+  }
+  console.log('verifiedObject', verifiedObject)
+
   if (!client) {
     return (
       <Loader
@@ -84,9 +167,19 @@ const ConversationsPanel = (): JSX.Element => {
     )
   }
 
-  return conversations && conversations.length > 0 ? (
+  let filtered = conversations
+  if (filterMode) {
+    filtered = conversations.filter(
+      conversation => verifiedObject[conversation.peerAddress]
+    )
+  }
+
+  return filtered && filtered.length > 0 ? (
     <nav className="flex-1 pb-4 space-y-1">
-      <ConversationsList conversations={conversations} />
+      <button onClick={connect}>
+        {filterMode ? 'See All Messages' : 'Filter Messages'}
+      </button>
+      <ConversationsList conversations={filtered} />
     </nav>
   ) : (
     <NoConversationsMessage />
