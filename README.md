@@ -1,3 +1,72 @@
+# XMTP Chat with CyberConnect Filtering
+
+[Deployed Site](https://lit-xmtp-georgefane.vercel.app/)
+
+[Demo Video](https://youtu.be/QTd6Cz9Ak_U)
+
+[Original Demo Video on Zoom](https://umich.zoom.us/rec/share/2RKIcsiemFo8PxLIjnwC7asRJ6LDi2JVVgD7gCk0hkKQWjE6Ta_RtaGQHp4SrNt1.j35E2Mb63c3e9lZT?startTime=1653631725000)
+
+[Bounty Specs](https://gitcoin.co/issue/28892)
+
+## Changes from original XMTP
+
+[/components/LitShareModal.tsx](https://github.com/GeorgeFane/lit-xmtp/blob/main/components/LitShareModal.tsx) uses the sample code [here](https://github.com/LIT-Protocol/lit-share-modal-v2#usage), which Lit Protocol wrote
+
+## Lit Protocol Details
+
+[Relevant Lit Protocol Docs](https://developer.litprotocol.com/docs/littools/jssdk/dynamiccontent/#provisoning-access-to-a-resource)
+
+### Normal Lit Protocol Steps
+
+1. As mentioned in the video about Lit Protocol, accessControlConditions (like your address must have own least 1 NFT in this contract) are normally created to protect a specific resourceId (usually a URL)
+
+2. Both are passed into saveSigningCondition(), which ensures that people must satisfy the accessControlConditions to access the resourceId
+
+3. Passing accessControlConditions to getSignedToken() will give you a JSON web token (JWT), which says whether you are satisfactory/verified in encoded form. 
+
+4. The JWT is normally stored in the browser as a cookie, and when you visit the resourceId, the page will decode the JWT (verifyJwt()) to see if you are verified.
+
+### Lit Protocol and This Repo
+
+In this repo, for each access condition specified by the Lit modal, I create an accessControlConditions, resourceId, JWT, and decoded JWT in quick succession.
+
+A typical accessControlConditions looks like this:
+```
+const accessControlConditions = [
+  {
+    contractAddress: '0x319ba3aab86e04a37053e984bd411b2c63bf229e',
+    standardContractType: 'ERC721',
+    chain,
+    method: 'balanceOf',
+    parameters: [
+      ':userAddress'
+    ],
+    returnValueTest: {
+      comparator: '>',
+      value: '0'
+    }
+  }
+]
+```
+
+The important bit is the ':userAddress' in parameters, which checks if you, the user, have >0 NFTs from the specified contract. For each contact you have, I replace ':userAddress' with that contact's address and create a random URL for the resourceId. No joke, the URL is baseUrl followed by the string form of a Math.random() call.
+
+I get a JWT for each contact, which I immediately decode/verify to see if each contact passes the accessControlConditions. From the decoded JWT I grab the 'verified' key, a boolean, and store it in a mapping of contact address => verified boolean, which I use as a mask to filter the conversations that show up in your list on the right.
+
+## Alternatives to Lit Protocol
+
+Lit Protocol is very well suited to protecting resources, but I feel it is an odd choice when the user themselves wants to control what they see. It was also complex to integrate, with XMTP being in Next.js and TypeScript while Lit Share Modal v2 is in React and JSX. With Lit there are many steps to see if an address has certain tokens, and because we don't really need to protect a resource, something like [Covalent API](https://www.covalenthq.com/docs/api/#/) is easier to integrate and faster to run.
+
+I'm sure there are many APIs out there like Covalent that retrieve an address's token balances across contracts on a network. Sticking a GET request into a useEffect or a button's onClick can trigger contact filtering, with the same result as using Lit Protocol.
+
+That being said, Lit Protocol is a fantastic product, and I had fun and learned a lot in doing this bounty.
+
+## How to Deploy
+
+Fork this repo and import into Vercel ([tutorial](https://vercel.com/guides/deploying-nextjs-with-vercel#vercel-for-git)).
+
+# ORIGINAL README BELOW
+
 # React Chat Example
 
 ![Test](https://github.com/xmtp/example-chat-react/actions/workflows/test.yml/badge.svg)
