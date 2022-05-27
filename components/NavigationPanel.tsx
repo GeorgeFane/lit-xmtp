@@ -9,9 +9,6 @@ import { useEffect, useState } from 'react'
 import LitJsSdk from 'lit-js-sdk'
 
 import LitShareModal from './LitShareModal'
-// import ExampleModal from './ExampleModal/src/App'
-// import ExampleModal from './ExampleModal'
-// import ShareModal from './ShareModal'
 
 type NavigationPanelProps = {
   onConnect: () => Promise<void>
@@ -76,7 +73,7 @@ const ConversationsPanel = (): JSX.Element => {
   const [ filterMode, setFilterMode ] = useState(false)
   const [ loading, setLoading ] = useState(false)
   const [ verifiedArray, setVerifiedArray ] = useState<any[][]>([])
-  const [ modalOutput, setModalOutput ] = useState()
+  const [ modalOutput, setModalOutput ] = useState<any>()
 
   const chain = 'rinkeby'
   const baseUrl = 'http://localhost:3000'

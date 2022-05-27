@@ -2,14 +2,17 @@ import ShareModal from 'lit-share-modal';
 import { useState } from 'react';
 import '/workspace/example-chat-react/node_modules/lit-share-modal/dist/style.css'
 
-const App = ({ setModalOutput }) => {
+type AppProps = {
+  setModalOutput: (x: object) => void
+}
+
+const App = ({ setModalOutput }: AppProps) => {
   const [openShareModal, setOpenShareModal] = useState(false);
 
   const onAccessControlConditionsSelected = (shareModalOutput: object) => {
     // do things with share modal output
     try {
       setModalOutput(shareModalOutput)
-
     } catch (e) {
       console.log(e)
     }

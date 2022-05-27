@@ -3,6 +3,9 @@ const optimizedImages = require('next-optimized-images')
 
 /** @type {import('next').NextConfig} */
 const nextConfig = optimizedImages({
+  typeScript: {
+    ignoreBuildErrors: true
+  },
   reactStrictMode: true,
   handleImages: ['svg'],
   webpack: (config, { isServer }) => {
