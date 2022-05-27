@@ -34,13 +34,13 @@ const MessageComposer = ({ onSend }: MessageComposerProps): JSX.Element => {
   return (
     <div
       className={classNames(
-        'sticky',
-        'bottom-3 md:bottom-2',
-        'z-10',
-        'flex-shrink-0',
-        'flex',
-        'h-16',
-        'bg-white',
+        // 'sticky',
+        // 'bottom-3 md:bottom-2',
+        // 'z-10',
+        // 'flex-shrink-0',
+        // 'flex',
+        // 'h-16',
+        // 'bg-white',
 
         messageComposerStyles.container
       )}

@@ -83,7 +83,9 @@ const MessagesList = ({
   return (
     <div className="flex-grow flex">
       <div className="pb-6 md:pb-0 w-full flex flex-col self-end">
-        <div className="relative w-full bg-white px-4 pt-6 overflow-y-auto flex">
+        <div
+          // className="relative w-full bg-white px-4 pt-6 overflow-y-auto flex"
+        >
           <div className="w-full">
             {messages && messages.length ? (
               <ConversationBeginningNotice />

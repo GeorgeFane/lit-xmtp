@@ -8,6 +8,11 @@ import Loader from './Loader'
 import { useEffect, useState } from 'react'
 import LitJsSdk from 'lit-js-sdk'
 
+import LitShareModal from './LitShareModal'
+// import ExampleModal from './ExampleModal/src/App'
+// import ExampleModal from './ExampleModal'
+// import ShareModal from './ShareModal'
+
 type NavigationPanelProps = {
   onConnect: () => Promise<void>
 }
@@ -69,36 +74,13 @@ const ConnectButton = ({ onConnect }: ConnectButtonProps): JSX.Element => {
 const ConversationsPanel = (): JSX.Element => {
   const { conversations, loadingConversations, client } = useXmtp()
   const [ filterMode, setFilterMode ] = useState(false)
+  const [ loading, setLoading ] = useState(false)
   const [ verifiedArray, setVerifiedArray ] = useState<any[][]>([])
+  const [ modalOutput, setModalOutput ] = useState()
 
   const chain = 'rinkeby'
   const baseUrl = 'http://localhost:3000'
-
   const peers = conversations.map(conversation => conversation.peerAddress)
-
-  const getAccessControlConditions = (address: string) => ([
-    {
-      contractAddress: '0x5B8B635c2665791cf62fe429cB149EaB42A3cEd8',
-      standardContractType: 'ERC20',
-      chain,
-      method: 'balanceOf',
-      parameters: [
-        address
-      ],
-      returnValueTest: {
-        comparator: '>',
-        value: '0'
-      }
-    }
-  ])
-
-  const getResourceId = (address: string) => ({
-    baseUrl,
-    path: '/dm/' + address, // this would normally be your url path, like "/webpage.html" for example
-    orgId: "",
-    role: "",
-    extraData: ""
-  })
 
   async function connect() {
     setFilterMode(!filterMode)
@@ -106,13 +88,37 @@ const ConversationsPanel = (): JSX.Element => {
       return
     }
 
+    setLoading(true)
+
     const client = new LitJsSdk.LitNodeClient({ alertWhenUnauthorized: false })
     await client.connect()
     const authSig = await LitJsSdk.checkAndSignAuthMessage({chain})
 
     async function getVerified(address: string) {
+
+      const getAccessControlConditions = (address: string) => {
+        let rtn = structuredClone(modalOutput.accessControlConditions)
+        rtn[0].parameters[0] = address
+
+        console.log('getAccessControlConditions', rtn)
+        return rtn
+      }
+    
+      const getResourceId = () => {
+        const rtn = {
+          baseUrl,
+          path: '/' + Math.random(), // this would normally be your url path, like "/webpage.html" for example
+          orgId: "",
+          role: "",
+          extraData: ""
+        }
+
+        // console.log(rtn)
+        return rtn
+      }
+      
       const accessControlConditions = getAccessControlConditions(address)
-      const resourceId = getResourceId(address)
+      const resourceId = getResourceId()
   
       try {
         await client.saveSigningCondition({ accessControlConditions, chain, authSig, resourceId })
@@ -135,18 +141,17 @@ const ConversationsPanel = (): JSX.Element => {
 
     const promises = peers.map(peer => getVerified(peer))
     const rtn = await Promise.all(promises)
-    console.log('map', rtn)
+
     setVerifiedArray(rtn)
+    setLoading(false)
   }
 
-  console.log('verifiedArray', verifiedArray)
   let verifiedObject: any = {}
   if (verifiedArray.length) {
     verifiedArray.forEach( ([ address, isVerified ]) => {
       verifiedObject[address] = isVerified
     })
   }
-  console.log('verifiedObject', verifiedObject)
 
   if (!client) {
     return (
@@ -157,7 +162,7 @@ const ConversationsPanel = (): JSX.Element => {
       />
     )
   }
-  if (loadingConversations) {
+  if (loadingConversations || loading) {
     return (
       <Loader
         headingText="Loading conversations..."
@@ -174,15 +179,32 @@ const ConversationsPanel = (): JSX.Element => {
     )
   }
 
-  return filtered && filtered.length > 0 ? (
+  const rtn = filtered && filtered.length > 0 ? (
     <nav className="flex-1 pb-4 space-y-1">
-      <button onClick={connect}>
-        {filterMode ? 'See All Messages' : 'Filter Messages'}
-      </button>
+      <LitShareModal
+        setModalOutput={setModalOutput}
+      />
+
+      {/* <ExampleModal /> */}
+
       <ConversationsList conversations={filtered} />
     </nav>
   ) : (
     <NoConversationsMessage />
+  )
+
+  return (
+    <div>
+      <button
+        onClick={connect}
+        disabled={modalOutput === undefined}
+        title={JSON.stringify(modalOutput)}
+      >
+        {filterMode ? 'See All Messages' : 'Filter Messages'}
+      </button>
+
+      {rtn}
+    </div>
   )
 }
 
