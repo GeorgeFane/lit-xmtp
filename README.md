@@ -1,4 +1,4 @@
-# XMTP Chat with CyberConnect Filtering
+# XMTP Chat App with Token Gating through Lit Protocol
 
 [Deployed Site](https://lit-xmtp-georgefane.vercel.app/)
 
